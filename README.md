@@ -15,7 +15,7 @@ Video to Word Counter is a simple and intuitive web app that:
 
 - Built using Streamlit, Whisper, FFmpeg, and Plotly.
 
-🚀 Features
+## 🚀 Features
 
 - Upload .mp4, .mov, or .avi video files
 
@@ -29,7 +29,7 @@ Video to Word Counter is a simple and intuitive web app that:
 
 - Easy clearing and reprocessing of new videos
 
-📦 Requirements
+## 📦 Requirements
 
 Python Packages:
 
@@ -45,24 +45,30 @@ Install FFmpeg:
 
 Windows: [Download FFmpeg](https://ffmpeg.org/download.html)
 
-🛠️ Folder Structure
+## 🔥 Getting Started (Docker)
+1. Clone the repository
 
-```text
-.
-├── video_word_counter.py                # Main Streamlit application
-├── extract_audio.py                     # Audio extraction from video
-├── transcribe_audio.py                  # Audio transcription with Whisper
-├── word_counter.py                      # Word frequency and timestamp counter
-└── requirements.txt                     # List of dependencies
+```
+git clone https://github.com/mawi510/VideoWordCounter.git
+cd video-word-counter
 ```
 
+2. Build Docker Image
 
-🔥 Getting Started
+```
+docker compose up --build
+```
+
+3. Open your browser
+
+`Navigate to http://localhost:8501 to interact with the app.`
+
+## 🔥 Getting Started (Manual)
 
 1. Clone the repository
 
 ```
-git clone https://github.com/your-username/video-word-counter.git
+git clone https://github.com/mawi510/VideoWordCounter.git
 cd video-word-counter
 ```
 
