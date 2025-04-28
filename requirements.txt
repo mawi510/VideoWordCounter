@@ -1,0 +1,6 @@
+streamlit
+whisper
+ffmpeg-python
+pandas
+plotly
+torch
