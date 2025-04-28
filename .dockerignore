@@ -1,0 +1,34 @@
+# Ignore Python cache files
+__pycache__/
+*.pyc
+*.pyo
+
+# Ignore environment files
+.env
+.venv
+
+# Ignore Streamlit temp files
+.streamlit/
+
+# Ignore MacOS system files
+.DS_Store
+
+# Ignore git metadata
+.git
+.gitignore
+
+# Ignore other temporary files
+*.log
+*.tmp
+*.bak
+
+# Ignore video and audio uploads
+*.mp4
+*.avi
+*.mov
+*.wav
+
+# Ignore local build files
+dist/
+build/
+*.egg-info/
