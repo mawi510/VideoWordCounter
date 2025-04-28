@@ -1,5 +1,6 @@
 # Video to Word Counter App
- 
+![Docker Build](https://github.com/mawi510/VideoWordCounter/actions/workflows/docker-build.yml/badge.svg)
+
 Video to Word Counter is a simple and intuitive web app that:
 
 - 📹 Takes a video file as input
