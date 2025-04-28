@@ -72,7 +72,7 @@ cd video-word-counter
 
 3. Run the app
 
-`streamlit run app.py`
+`streamlit run video_word_counter.py`
 
 4. Open your browser
 
