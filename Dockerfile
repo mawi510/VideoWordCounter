@@ -21,3 +21,5 @@ EXPOSE 8501
 
 # Command to run the app
 CMD ["streamlit", "run", "video_word_counter.py", "--server.port=8501", "--server.address=0.0.0.0"]
+
+
