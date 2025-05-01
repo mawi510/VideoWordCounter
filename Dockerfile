@@ -2,9 +2,7 @@
 FROM python:3.11-slim
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y \
-    ffmpeg \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y python3 python3-pip
 
 # Set working directory
 WORKDIR /app
@@ -14,7 +12,7 @@ COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy all application files
-COPY . .
+COPY video_word_counter.py /
 
 # Expose the Streamlit default port
 EXPOSE 8501
