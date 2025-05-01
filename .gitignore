@@ -174,8 +174,8 @@ cython_debug/
 .pypirc
 
 # Media Files
-.mp4
-.mov
-.avi
-.mp3
-.wav
+*.mp4
+*.mov
+*.avi
+*.mp3
+*.wav
