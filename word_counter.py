@@ -27,7 +27,7 @@ def get_word_counts(segments):
     for segment in segments:
         for word_info in segment['words']:
             word = clean_word(word_info['word'])
-            if word not in stopwords.words('english'):
+            if word not in stopwords.words('english') and word != '':
                 words.append(word)
                 word_times.setdefault(word, []).append(word_info['start'])
     counter = Counter(words)
