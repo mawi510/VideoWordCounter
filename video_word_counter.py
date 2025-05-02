@@ -1,3 +1,5 @@
+import os
+
 from extract_audio import extract_audio_ffmpeg
 from transcribe_audio import transcribe_audio
 from word_counter import get_word_counts
@@ -5,15 +7,6 @@ from word_counter import get_word_counts
 import pandas as pd
 import streamlit as st
 import plotly.express as px
-
-#This allows the user to see where a word was said
-#However we want to eliminate stop words as they're not super informative/interesting
-
-import nltk
-from nltk.corpus import stopwords
-
-#Have to download stopwords first
-nltk.download('stopwords')
 
 st.set_page_config(layout="wide")
 st.header("Video to Word Counter")
@@ -55,7 +48,7 @@ if st.session_state.get("processed", False):
 
     st.plotly_chart(fig, theme='streamlit', use_container_width=True)
 
-    word_list = [i for i in df['word'].unique() if i not in stopwords.words('english')]
+    word_list = sorted([i for i in df['word'].unique()])
     
     st.subheader("View Timestamps")
     word = st.selectbox('Word', word_list, placeholder='Select Word')
@@ -64,7 +57,7 @@ if st.session_state.get("processed", False):
 
     if timestamps:
         selected_time = st.selectbox("Jump to timestamp (sec):", timestamps)
-        st.video(video_path, start_time=int(selected_time))
+        st.video(video_path, start_time=selected_time)
     else:
         st.warning("No timestamps found for the selected word.")
     
