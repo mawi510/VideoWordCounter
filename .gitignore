@@ -182,3 +182,4 @@ cython_debug/
 
 #Other file types
 *.zip
+.DS_Store
