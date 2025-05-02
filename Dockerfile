@@ -2,7 +2,7 @@
 FROM python:3.11-slim
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y python3 python3-pip
+RUN apt-get update && apt-get install -y python3 python3-pip ffmpeg
 
 # Set working directory
 WORKDIR /app

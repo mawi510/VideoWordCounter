@@ -1,6 +1,5 @@
 streamlit
-whisper
-ffmpeg-python
+openai-whisper
 pandas
 plotly
-torch
+nltk

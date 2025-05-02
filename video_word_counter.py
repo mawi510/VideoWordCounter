@@ -1,67 +1,65 @@
 import os
-from io import StringIO
-
-import pandas as pd
-import streamlit as st
-import plotly.express as px
-import whisper
 
 from extract_audio import extract_audio_ffmpeg
 from transcribe_audio import transcribe_audio
 from word_counter import get_word_counts
 
+import pandas as pd
+import streamlit as st
+import plotly.express as px
+
+st.set_page_config(layout="wide")
 st.header("Video to Word Counter")
+
+# Cache heavy processing steps
+@st.cache_data
+def process_video(video_file):
+    video_path = f"temp_{video_file.name}"
+    with open(video_path, "wb") as f:
+        f.write(video_file.read())
+    audio_path = extract_audio_ffmpeg(video_path)
+    segments = transcribe_audio(audio_path)
+    counter, word_times = get_word_counts(segments)
+    return video_path, counter, word_times
+
 
 uploaded_video = st.file_uploader("Upload your video", type=["mp4", "mov", "avi"])
 
-st.text("Click below to clear cache and transcribe a new video")
+if uploaded_video:
+    if "processed" not in st.session_state or st.session_state.video_name != uploaded_video.name:
+        st.session_state.video_name = uploaded_video.name
+        st.session_state.video_path, st.session_state.counter, st.session_state.word_times = process_video(uploaded_video)
+        st.session_state.processed = True
 
-if st.button("Clear", type='primary'):
-    st.cache_data.clear()
+if st.session_state.get("processed", False):
+    counter = st.session_state.counter
+    word_times = st.session_state.word_times
+    video_path = st.session_state.video_path
+
+    st.subheader("Word Frequencies")
+    df = pd.DataFrame.from_dict(dict(counter), 
+                                orient='index').reset_index()
+    df.columns=['word', 'frequency']
+    df = df.sort_values(by='frequency', ascending=False)
+
+    fig = px.bar(df, 
+                x='word', 
+                y='frequency')
+
+    st.plotly_chart(fig, theme='streamlit', use_container_width=True)
+
+    word_list = sorted([i for i in df['word'].unique()])
+    
+    st.subheader("View Timestamps")
+    word = st.selectbox('Word', word_list, placeholder='Select Word')
+
+    timestamps = word_times.get(word, [])
+
+    if timestamps:
+        selected_time = st.selectbox("Jump to timestamp (sec):", timestamps)
+        st.video(video_path, start_time=selected_time)
+    else:
+        st.warning("No timestamps found for the selected word.")
+    
 else:
-    pass
-
-if uploaded_video is not None:
-    with st.spinner('Processing...'):
-        video_path = uploaded_video.name
-        with open(video_path, "wb") as f:
-            f.write(uploaded_video.read())
-
-    audio_path = extract_audio_ffmpeg(video_path)
-
-#Get audio segments
-
-@st.cache_data
-def transcribe_audio(audio_path):
-    model = whisper.load_model("small")
-    result = model.transcribe(audio_path, word_timestamps=True)
-    return result['segments']
-
-segments = transcribe_audio(audio_path)
-counter, word_times = get_word_counts(segments)
-
-
-st.subheader("Word Frequencies")
-df = pd.DataFrame.from_dict(dict(counter), 
-                            orient='index').reset_index()
-df.columns=['word', 'frequency']
-df = df.sort_values(by='frequency', ascending=False)
-
-fig = px.bar(df, 
-             x='word', 
-             y='frequency')
-
-st.plotly_chart(fig, theme='streamlit', use_container_width=True)
-
-
-st.subheader("View Timestamps")
-word = st.selectbox('Word', df['word'].unique(), placeholder='Select Word')
-
-timestamps = word_times[word]
-timestamp = st.selectbox('Timestamp', timestamps, placeholder='Select Timestamp')
-
-@st.cache_data
-def load_video(start_time):
-    st.video("uploaded_video.mp4", start_time=start_time, muted=True)
-
-load_video(timestamp)
+    st.text("Upload your video to get started! 🎥")
