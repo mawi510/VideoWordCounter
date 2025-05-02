@@ -1,5 +1,5 @@
 streamlit
-whisper
+openai-whisper
 pandas
 plotly
 nltk
