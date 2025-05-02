@@ -1,5 +1,4 @@
 import whisper
-import streamlit as st
 
 def transcribe_audio(audio_path):
     model = whisper.load_model("small")
