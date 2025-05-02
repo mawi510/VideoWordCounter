@@ -30,7 +30,6 @@ if uploaded_video:
         st.session_state.video_name = uploaded_video.name
         st.session_state.video_path, st.session_state.counter, st.session_state.word_times = process_video(uploaded_video)
         st.session_state.processed = True
-        st.text(st.session_state)
 
 if st.session_state.get("processed", False):
     counter = st.session_state.counter
