@@ -1,7 +1,7 @@
 import os
 
 from extract_audio import extract_audio_ffmpeg
-from transcribe_audio import transcribe_audio
+from transcribe_audio import grab_audio_segments
 from word_counter import get_word_counts
 
 import pandas as pd
@@ -18,7 +18,7 @@ def process_video(video_file):
     with open(video_path, "wb") as f:
         f.write(video_file.read())
     audio_path = extract_audio_ffmpeg(video_path)
-    segments = transcribe_audio(audio_path)
+    segments = grab_audio_segments(audio_path)
     counter, word_times = get_word_counts(segments)
     return video_path, counter, word_times
 
@@ -35,6 +35,8 @@ if st.session_state.get("processed", False):
     counter = st.session_state.counter
     word_times = st.session_state.word_times
     video_path = st.session_state.video_path
+    # segments = st.session_state.segments
+    # st.text(segments)
 
     st.subheader("Word Frequencies")
     df = pd.DataFrame.from_dict(dict(counter), 
