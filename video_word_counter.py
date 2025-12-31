@@ -86,11 +86,15 @@ if input_method == "Upload a video file":
     if uploaded_video:
         video_identifier = uploaded_video.name
         if "processed" not in st.session_state or st.session_state.video_name != video_identifier or st.session_state.input_method != "file":
-            with st.spinner("Processing video..."):
+            with st.status("Processing video...", expanded=True) as status:
+                st.write("📹 Extracting audio from video...")
                 st.session_state.input_method = "file"
                 st.session_state.video_name = video_identifier
+                st.write("🎙️ Transcribing audio (this may take a moment)...")
                 st.session_state.video_path, st.session_state.counter, st.session_state.word_times = process_video_file(uploaded_video)
-                st.session_state.processed = True
+                st.write("✅ Transcription complete!")
+                status.update(label="Processing complete!", state="complete")
+            st.session_state.processed = True
         video_processed = True
 else:
     video_url = st.text_input("Enter video URL (YouTube, Vimeo, etc.)", placeholder="https://www.youtube.com/watch?v=...")
@@ -98,11 +102,16 @@ else:
         if is_valid_url(video_url):
             video_identifier = video_url
             if "processed" not in st.session_state or st.session_state.video_name != video_identifier or st.session_state.input_method != "url":
-                with st.spinner("Processing video..."):
+                with st.status("Processing video...", expanded=True) as status:
+                    st.write("📥 Downloading video from URL...")
                     st.session_state.input_method = "url"
                     st.session_state.video_name = video_identifier
+                    st.write("📹 Extracting audio...")
+                    st.write("🎙️ Transcribing audio (this may take a moment)...")
                     st.session_state.video_path, st.session_state.counter, st.session_state.word_times = process_video_url(video_url)
-                    st.session_state.processed = True
+                    st.write("✅ Transcription complete!")
+                    status.update(label="Processing complete!", state="complete")
+                st.session_state.processed = True
             video_processed = True
         else:
             st.error("Please enter a valid URL")

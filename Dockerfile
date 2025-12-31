@@ -12,7 +12,7 @@ COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy all application files
-COPY video_word_counter.py /
+COPY *.py ./
 
 # Expose the Streamlit default port
 EXPOSE 8501
