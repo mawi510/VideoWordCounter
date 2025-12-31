@@ -1,4 +1,7 @@
 import os
+import re
+import glob
+import yt_dlp
 
 from extract_audio import extract_audio_ffmpeg
 from transcribe_audio import grab_audio_segments
@@ -11,9 +14,47 @@ import plotly.express as px
 st.set_page_config(layout="wide")
 st.header("Video to Word Counter")
 
+def is_valid_url(url):
+    """Check if the input is a valid URL"""
+    url_pattern = re.compile(
+        r'^https?://'  # http:// or https://
+        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|'  # domain...
+        r'localhost|'  # localhost...
+        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or ip
+        r'(?::\d+)?'  # optional port
+        r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+    return url_pattern.match(url) is not None
+
+def download_video_from_url(url, output_path="temp_downloaded_video"):
+    """Download video from URL using yt-dlp"""
+    ydl_opts = {
+        'format': 'best[ext=mp4]/best',  # Prefer mp4, fallback to best available
+        'outtmpl': f'{output_path}.%(ext)s',
+        'quiet': True,
+        'no_warnings': True,
+    }
+    
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        # First extract info to get the extension
+        info = ydl.extract_info(url, download=False)
+        ext = info.get('ext', 'mp4')
+        # Now download
+        ydl.download([url])
+        downloaded_path = f'{output_path}.{ext}'
+    
+    # Verify file exists
+    if os.path.exists(downloaded_path):
+        return downloaded_path
+    else:
+        # Fallback: try to find any file starting with output_path
+        matches = glob.glob(f"{output_path}.*")
+        if matches:
+            return matches[0]
+        raise FileNotFoundError(f"Downloaded video file not found: {downloaded_path}")
+
 # Cache heavy processing steps
 @st.cache_data
-def process_video(video_file):
+def process_video_file(video_file):
     video_path = f"temp_{video_file.name}"
     with open(video_path, "wb") as f:
         f.write(video_file.read())
@@ -22,16 +63,51 @@ def process_video(video_file):
     counter, word_times = get_word_counts(segments)
     return video_path, counter, word_times
 
+@st.cache_data
+def process_video_url(url):
+    video_path = download_video_from_url(url)
+    audio_path = extract_audio_ffmpeg(video_path)
+    segments = grab_audio_segments(audio_path)
+    counter, word_times = get_word_counts(segments)
+    return video_path, counter, word_times
 
-uploaded_video = st.file_uploader("Upload your video", type=["mp4", "mov", "avi"])
+# UI: Let user choose between file upload or URL
+input_method = st.radio(
+    "Choose input method:",
+    ["Upload a video file", "Enter a video URL"],
+    horizontal=True
+)
 
-if uploaded_video:
-    if "processed" not in st.session_state or st.session_state.video_name != uploaded_video.name:
-        st.session_state.video_name = uploaded_video.name
-        st.session_state.video_path, st.session_state.counter, st.session_state.word_times = process_video(uploaded_video)
-        st.session_state.processed = True
+video_processed = False
+video_identifier = None
 
-if st.session_state.get("processed", False):
+if input_method == "Upload a video file":
+    uploaded_video = st.file_uploader("Upload your video", type=["mp4", "mov", "avi"])
+    if uploaded_video:
+        video_identifier = uploaded_video.name
+        if "processed" not in st.session_state or st.session_state.video_name != video_identifier or st.session_state.input_method != "file":
+            with st.spinner("Processing video..."):
+                st.session_state.input_method = "file"
+                st.session_state.video_name = video_identifier
+                st.session_state.video_path, st.session_state.counter, st.session_state.word_times = process_video_file(uploaded_video)
+                st.session_state.processed = True
+        video_processed = True
+else:
+    video_url = st.text_input("Enter video URL (YouTube, Vimeo, etc.)", placeholder="https://www.youtube.com/watch?v=...")
+    if video_url:
+        if is_valid_url(video_url):
+            video_identifier = video_url
+            if "processed" not in st.session_state or st.session_state.video_name != video_identifier or st.session_state.input_method != "url":
+                with st.spinner("Processing video..."):
+                    st.session_state.input_method = "url"
+                    st.session_state.video_name = video_identifier
+                    st.session_state.video_path, st.session_state.counter, st.session_state.word_times = process_video_url(video_url)
+                    st.session_state.processed = True
+            video_processed = True
+        else:
+            st.error("Please enter a valid URL")
+
+if st.session_state.get("processed", False) and video_processed:
     counter = st.session_state.counter
     word_times = st.session_state.word_times
     video_path = st.session_state.video_path
@@ -64,4 +140,4 @@ if st.session_state.get("processed", False):
         st.warning("No timestamps found for the selected word.")
     
 else:
-    st.text("Upload your video to get started! 🎥")
+    st.text("Upload a video file or enter a video URL to get started! 🎥")

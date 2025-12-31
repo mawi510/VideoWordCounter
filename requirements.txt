@@ -3,3 +3,4 @@ openai-whisper
 pandas
 plotly
 nltk
+yt-dlp
