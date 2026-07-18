@@ -1,5 +1,6 @@
 import os
 
+from download_audio import is_valid_url, download_audio_from_url
 from extract_audio import extract_audio_ffmpeg
 from transcribe_audio import grab_audio_segments
 from word_counter import get_word_counts
@@ -13,7 +14,7 @@ st.header("Video to Word Counter")
 
 # Cache heavy processing steps
 @st.cache_data
-def process_video(video_file):
+def process_video_file(video_file):
     video_path = f"temp_{video_file.name}"
     with open(video_path, "wb") as f:
         f.write(video_file.read())
@@ -22,16 +23,63 @@ def process_video(video_file):
     counter, word_times = get_word_counts(segments)
     return video_path, counter, word_times
 
+@st.cache_data
+def process_video_url(url):
+    # faster-whisper decodes m4a/webm directly, so no WAV extraction step here
+    audio_path, playback = download_audio_from_url(url)
+    try:
+        segments = grab_audio_segments(audio_path)
+    finally:
+        if os.path.exists(audio_path):
+            os.remove(audio_path)
+    counter, word_times = get_word_counts(segments)
+    return playback["url"], counter, word_times
 
-uploaded_video = st.file_uploader("Upload your video", type=["mp4", "mov", "avi"])
+# UI: Let user choose between file upload or URL
+input_method = st.radio(
+    "Choose input method:",
+    ["Upload a video file", "Enter a video URL"],
+    horizontal=True
+)
 
-if uploaded_video:
-    if "processed" not in st.session_state or st.session_state.video_name != uploaded_video.name:
-        st.session_state.video_name = uploaded_video.name
-        st.session_state.video_path, st.session_state.counter, st.session_state.word_times = process_video(uploaded_video)
-        st.session_state.processed = True
+video_processed = False
+video_identifier = None
 
-if st.session_state.get("processed", False):
+if input_method == "Upload a video file":
+    uploaded_video = st.file_uploader("Upload your video", type=["mp4", "mov", "avi"])
+    if uploaded_video:
+        video_identifier = uploaded_video.name
+        if "processed" not in st.session_state or st.session_state.video_name != video_identifier or st.session_state.input_method != "file":
+            with st.status("Processing video...", expanded=True) as status:
+                st.write("📹 Extracting audio from video...")
+                st.session_state.input_method = "file"
+                st.session_state.video_name = video_identifier
+                st.write("🎙️ Transcribing audio (this may take a moment)...")
+                st.session_state.video_path, st.session_state.counter, st.session_state.word_times = process_video_file(uploaded_video)
+                st.write("✅ Transcription complete!")
+                status.update(label="Processing complete!", state="complete")
+            st.session_state.processed = True
+        video_processed = True
+else:
+    video_url = st.text_input("Enter video URL (YouTube, Vimeo, etc.)", placeholder="https://www.youtube.com/watch?v=...")
+    if video_url:
+        if is_valid_url(video_url):
+            video_identifier = video_url
+            if "processed" not in st.session_state or st.session_state.video_name != video_identifier or st.session_state.input_method != "url":
+                with st.status("Processing video...", expanded=True) as status:
+                    st.write("📥 Downloading audio from URL...")
+                    st.session_state.input_method = "url"
+                    st.session_state.video_name = video_identifier
+                    st.write("🎙️ Transcribing audio (this may take a moment)...")
+                    st.session_state.video_path, st.session_state.counter, st.session_state.word_times = process_video_url(video_url)
+                    st.write("✅ Transcription complete!")
+                    status.update(label="Processing complete!", state="complete")
+                st.session_state.processed = True
+            video_processed = True
+        else:
+            st.error("Please enter a valid URL")
+
+if st.session_state.get("processed", False) and video_processed:
     counter = st.session_state.counter
     word_times = st.session_state.word_times
     video_path = st.session_state.video_path
@@ -64,4 +112,4 @@ if st.session_state.get("processed", False):
         st.warning("No timestamps found for the selected word.")
     
 else:
-    st.text("Upload your video to get started! 🎥")
+    st.text("Upload a video file or enter a video URL to get started! 🎥")

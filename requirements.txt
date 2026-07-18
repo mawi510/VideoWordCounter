@@ -1,5 +1,12 @@
-streamlit
-openai-whisper
+# Shared
 pandas
 plotly
 nltk
+yt-dlp
+# Hugging Face Space (ZeroGPU transcription)
+spaces
+torch==2.11.0  # newest version ZeroGPU supports; unpinned torch breaks with NVML asserts
+transformers
+# Local runs (CPU transcription + optional Streamlit UI)
+faster-whisper
+streamlit

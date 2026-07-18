@@ -11,6 +11,8 @@ from nltk.corpus import stopwords
 #Have to download stopwords first
 nltk.download('stopwords')
 
+STOPWORDS = set(stopwords.words('english'))
+
 emoji_pattern = re.compile("["
         u"\U0001F600-\U0001F64F"  # emoticons
         u"\U0001F300-\U0001F5FF"  # symbols & pictographs
@@ -27,7 +29,7 @@ def get_word_counts(segments):
     for segment in segments:
         for word_info in segment['words']:
             word = clean_word(word_info['word'])
-            if word not in stopwords.words('english') and word != '':
+            if word not in STOPWORDS and word != '':
                 words.append(word)
                 word_times.setdefault(word, []).append(word_info['start'])
     counter = Counter(words)

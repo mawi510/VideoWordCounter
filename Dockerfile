@@ -2,20 +2,30 @@
 FROM python:3.11-slim
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y python3 python3-pip ffmpeg
+RUN apt-get update && apt-get install -y ffmpeg && rm -rf /var/lib/apt/lists/*
+
+# Hugging Face Spaces runs containers as a non-root user with a writable HOME
+RUN useradd -m -u 1000 user
+USER user
+ENV HOME=/home/user \
+    PATH=/home/user/.local/bin:$PATH
 
 # Set working directory
-WORKDIR /app
+WORKDIR /home/user/app
 
 # Copy requirements and install Python dependencies
-COPY requirements.txt ./
+COPY --chown=user requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy all application files
-COPY video_word_counter.py /
+# Pre-download NLTK stopwords so the first request isn't slow
+RUN python -c "import nltk; nltk.download('stopwords')"
 
-# Expose the Streamlit default port
-EXPOSE 8501
+# Copy all application files
+COPY --chown=user *.py ./
+COPY --chown=user config.toml ./.streamlit/config.toml
+
+# Hugging Face Spaces serves the app on port 7860
+EXPOSE 7860
 
 # Command to run the app
-CMD ["streamlit", "run", "video_word_counter.py", "--server.port=8501", "--server.address=0.0.0.0"]
+CMD ["streamlit", "run", "video_word_counter.py", "--server.port=7860", "--server.address=0.0.0.0"]
