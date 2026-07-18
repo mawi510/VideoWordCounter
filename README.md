@@ -1,33 +1,55 @@
+---
+title: Video Word Counter
+emoji: 🎥
+colorFrom: blue
+colorTo: purple
+sdk: gradio
+sdk_version: 5.50.0
+app_file: app.py
+pinned: false
+---
+
 # Video to Word Counter App
 ![Docker Build](https://github.com/mawi510/VideoWordCounter/actions/workflows/docker-build.yml/badge.svg)
 
 Video to Word Counter is a simple and intuitive web app that:
 
-- 📹 Takes a video file as input
+- 🔗 Takes a video URL (YouTube, Vimeo, etc.) or an uploaded video file as input
 
-- 🎵 Extracts audio from the video using ffmpeg
+- 🎵 Downloads only the audio stream for URLs (tens of MB instead of the full video), or extracts audio with ffmpeg for uploads
 
-- 🔉 Transcribes the audio into words with timestamps using OpenAI's Whisper
+- 🔉 Transcribes the audio into words with timestamps using faster-whisper
 
 - 📊 Displays an interactive word frequency bar chart
 
 - 📲 Lets you jump to specific parts of the video by selecting words and timestamps
 
-- Built using Streamlit, Whisper, FFmpeg, and Plotly.
+- Built using Streamlit, faster-whisper, FFmpeg, yt-dlp, and Plotly.
 
 ## 🚀 Features
 
-- Upload .mp4, .mov, or .avi video files
+- Paste a video link — the full video is never downloaded, only its audio
 
-- Extract clean audio for transcription
+- Or upload .mp4, .mov, or .avi video files
 
-- Whisper model (small) for accurate speech-to-text
+- faster-whisper model (small, int8) for fast, accurate speech-to-text — override with the `WHISPER_MODEL` env var (e.g. `base` for smaller hosts)
 
 - Interactive bar chart showing word frequency
 
-- Timestamp-based video navigation
+- Timestamp-based video navigation (URL videos play from the original site, uploads from the local file)
 
-- Easy clearing and reprocessing of new videos
+## ☁️ Hosted App (Hugging Face Spaces)
+
+The app deploys to Hugging Face Spaces (free tier) as a Docker Space — the YAML block at the top of this README is the Space config. To deploy:
+
+```
+git remote add hf https://huggingface.co/spaces/<your-hf-username>/VideoWordCounter
+git push hf main
+```
+
+Every push to the `hf` remote rebuilds and redeploys the Space; `origin` remains GitHub.
+
+**Known limitation:** YouTube often blocks downloads from cloud/datacenter IPs ("Sign in to confirm you're not a bot"). YouTube links may fail on the hosted Space but work when running locally; most other sites work fine either way.
 
 ## 📦 Requirements
 

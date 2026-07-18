@@ -4,9 +4,9 @@ services:
   app:
     build: .
     ports:
-      - "8501:8501"
+      - "8501:7860"
     volumes:
-      - .:/app
+      - .:/home/user/app
     environment:
       - PYTHONUNBUFFERED=1
     container_name: video-word-counter

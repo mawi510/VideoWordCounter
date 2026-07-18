@@ -1,8 +1,6 @@
 import os
-import re
-import glob
-import yt_dlp
 
+from download_audio import is_valid_url, download_audio_from_url
 from extract_audio import extract_audio_ffmpeg
 from transcribe_audio import grab_audio_segments
 from word_counter import get_word_counts
@@ -13,44 +11,6 @@ import plotly.express as px
 
 st.set_page_config(layout="wide")
 st.header("Video to Word Counter")
-
-def is_valid_url(url):
-    """Check if the input is a valid URL"""
-    url_pattern = re.compile(
-        r'^https?://'  # http:// or https://
-        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|'  # domain...
-        r'localhost|'  # localhost...
-        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or ip
-        r'(?::\d+)?'  # optional port
-        r'(?:/?|[/?]\S+)$', re.IGNORECASE)
-    return url_pattern.match(url) is not None
-
-def download_video_from_url(url, output_path="temp_downloaded_video"):
-    """Download video from URL using yt-dlp"""
-    ydl_opts = {
-        'format': 'best[ext=mp4]/best',  # Prefer mp4, fallback to best available
-        'outtmpl': f'{output_path}.%(ext)s',
-        'quiet': True,
-        'no_warnings': True,
-    }
-    
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        # First extract info to get the extension
-        info = ydl.extract_info(url, download=False)
-        ext = info.get('ext', 'mp4')
-        # Now download
-        ydl.download([url])
-        downloaded_path = f'{output_path}.{ext}'
-    
-    # Verify file exists
-    if os.path.exists(downloaded_path):
-        return downloaded_path
-    else:
-        # Fallback: try to find any file starting with output_path
-        matches = glob.glob(f"{output_path}.*")
-        if matches:
-            return matches[0]
-        raise FileNotFoundError(f"Downloaded video file not found: {downloaded_path}")
 
 # Cache heavy processing steps
 @st.cache_data
@@ -65,11 +25,15 @@ def process_video_file(video_file):
 
 @st.cache_data
 def process_video_url(url):
-    video_path = download_video_from_url(url)
-    audio_path = extract_audio_ffmpeg(video_path)
-    segments = grab_audio_segments(audio_path)
+    # faster-whisper decodes m4a/webm directly, so no WAV extraction step here
+    audio_path, playback = download_audio_from_url(url)
+    try:
+        segments = grab_audio_segments(audio_path)
+    finally:
+        if os.path.exists(audio_path):
+            os.remove(audio_path)
     counter, word_times = get_word_counts(segments)
-    return video_path, counter, word_times
+    return playback["url"], counter, word_times
 
 # UI: Let user choose between file upload or URL
 input_method = st.radio(
@@ -103,10 +67,9 @@ else:
             video_identifier = video_url
             if "processed" not in st.session_state or st.session_state.video_name != video_identifier or st.session_state.input_method != "url":
                 with st.status("Processing video...", expanded=True) as status:
-                    st.write("📥 Downloading video from URL...")
+                    st.write("📥 Downloading audio from URL...")
                     st.session_state.input_method = "url"
                     st.session_state.video_name = video_identifier
-                    st.write("📹 Extracting audio...")
                     st.write("🎙️ Transcribing audio (this may take a moment)...")
                     st.session_state.video_path, st.session_state.counter, st.session_state.word_times = process_video_url(video_url)
                     st.write("✅ Transcription complete!")
