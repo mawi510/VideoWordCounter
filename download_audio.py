@@ -1,5 +1,6 @@
 import glob
 import re
+import uuid
 
 import yt_dlp
 
@@ -14,7 +15,7 @@ def is_valid_url(url):
         r'(?:/?|[/?]\S+)$', re.IGNORECASE)
     return url_pattern.match(url) is not None
 
-def download_audio_from_url(url, output_path="temp_downloaded_audio"):
+def download_audio_from_url(url, output_path=None):
     """Download only the audio stream using yt-dlp; the video itself is never fetched.
 
     Returns (audio_path, playback) where playback describes how to embed the video
@@ -22,6 +23,9 @@ def download_audio_from_url(url, output_path="temp_downloaded_audio"):
       {"kind": "youtube", "video_id": ..., "url": <watch page URL>}
       {"kind": "direct", "url": <direct video stream or original URL>}
     """
+    if output_path is None:
+        # Unique name so concurrent users on a shared host don't collide
+        output_path = f"temp_audio_{uuid.uuid4().hex}"
     ydl_opts = {
         'format': 'bestaudio/best',  # Audio stream only — tens of MB instead of the full video
         'outtmpl': f'{output_path}.%(ext)s',

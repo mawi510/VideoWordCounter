@@ -1,4 +1,5 @@
 import os
+import uuid
 
 import gradio as gr
 import pandas as pd
@@ -54,11 +55,16 @@ def process_url(url):
                 "or run the app locally where YouTube links work."
             )
         raise gr.Error(f"Could not download audio from that URL: {e}")
+    # Normalize to 16kHz mono WAV: transformers' pipeline pipes audio bytes into
+    # ffmpeg stdin, which fails on seek-dependent containers like mp4/m4a
+    wav_path = f"temp_audio_{uuid.uuid4().hex}.wav"
     try:
-        segments = grab_audio_segments(audio_path)
+        extract_audio_ffmpeg(audio_path, wav_path)
+        segments = grab_audio_segments(wav_path)
     finally:
-        if os.path.exists(audio_path):
-            os.remove(audio_path)
+        for path in (audio_path, wav_path):
+            if os.path.exists(path):
+                os.remove(path)
     counter, word_times = get_word_counts(segments)
     return build_outputs(counter, word_times, playback)
 
@@ -67,7 +73,7 @@ def process_upload(video_path):
     if not video_path:
         raise gr.Error("Please upload a video first")
 
-    audio_path = extract_audio_ffmpeg(video_path, "temp_upload_audio.wav")
+    audio_path = extract_audio_ffmpeg(video_path, f"temp_audio_{uuid.uuid4().hex}.wav")
     try:
         segments = grab_audio_segments(audio_path)
     finally:
