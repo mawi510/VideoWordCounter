@@ -40,14 +40,14 @@ Video to Word Counter is a simple and intuitive web app that:
 
 ## ☁️ Hosted App (Hugging Face Spaces)
 
-The app deploys to Hugging Face Spaces (free tier) as a Docker Space — the YAML block at the top of this README is the Space config. To deploy:
+The app runs at https://huggingface.co/spaces/mawi510/VideoWordCounter as a free Gradio Space on ZeroGPU hardware — the YAML block at the top of this README is the Space config, `app.py` is the entry point, and transcription runs on the free GPU slice via `transcribe_gpu.py` (locally the app uses faster-whisper on CPU instead). To redeploy after changes, push a history-free snapshot (the repo's git history contains an old >10MB video that Hugging Face rejects):
 
 ```
-git remote add hf https://huggingface.co/spaces/<your-hf-username>/VideoWordCounter
-git push hf main
+git remote add hf https://huggingface.co/spaces/mawi510/VideoWordCounter   # once
+SNAP=$(git commit-tree HEAD^{tree} -m "Deploy snapshot") && git push hf "${SNAP}:refs/heads/main" --force
 ```
 
-Every push to the `hf` remote rebuilds and redeploys the Space; `origin` remains GitHub.
+`origin` remains GitHub.
 
 **Known limitation:** YouTube often blocks downloads from cloud/datacenter IPs ("Sign in to confirm you're not a bot"). YouTube links may fail on the hosted Space but work when running locally; most other sites work fine either way.
 
