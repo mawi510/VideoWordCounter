@@ -3,6 +3,7 @@ import os
 import gradio as gr
 import pandas as pd
 import plotly.express as px
+import yt_dlp
 
 from download_audio import is_valid_url, download_audio_from_url
 from extract_audio import extract_audio_ffmpeg
@@ -17,6 +18,8 @@ else:
 
 
 def build_outputs(counter, word_times, playback):
+    if not counter:
+        raise gr.Error("No speech was detected in this video's audio.")
     df = pd.DataFrame.from_dict(dict(counter), orient='index').reset_index()
     df.columns = ['word', 'frequency']
     df = df.sort_values(by='frequency', ascending=False)
@@ -41,7 +44,16 @@ def process_url(url):
     if not url or not is_valid_url(url):
         raise gr.Error("Please enter a valid video URL")
 
-    audio_path, playback = download_audio_from_url(url)
+    try:
+        audio_path, playback = download_audio_from_url(url)
+    except yt_dlp.utils.DownloadError as e:
+        if "not a bot" in str(e):
+            raise gr.Error(
+                "This site blocked the download from the cloud server "
+                "(YouTube often does this to hosted apps). Try a different site, "
+                "or run the app locally where YouTube links work."
+            )
+        raise gr.Error(f"Could not download audio from that URL: {e}")
     try:
         segments = grab_audio_segments(audio_path)
     finally:
