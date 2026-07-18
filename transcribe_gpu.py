@@ -23,11 +23,15 @@ def grab_audio_segments(input_audio_path, progress_callback=None):
     if progress_callback:
         progress_callback("Transcribing audio on GPU...")
 
+    # Greedy decoding and a modest batch: word timestamps store cross-attention
+    # maps for every generation step, which OOMs the ZeroGPU slice at high
+    # batch sizes or with beam search
     result = pipe(
         input_audio_path,
         return_timestamps="word",
         chunk_length_s=30,
-        batch_size=16,
+        batch_size=4,
+        generate_kwargs={"num_beams": 1},
     )
 
     words = []
